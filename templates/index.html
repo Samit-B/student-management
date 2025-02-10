@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script> <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body class="bg-gray-100 p-6">
+
+    <h2 class="text-2xl font-bold text-center mb-4">Student List</h2>
+    <!--<div class="w-1/3 p-4 bg-white shadow-md rounded-lg absolute top-4 left-4">
+        <canvas id="marksChart"></canvas>
+    </div> -->
+    <!-- Bar Chart Container (Positioned at the Bottom) -->
+
+
+    
+    <table class="w-full bg-white shadow-md rounded-lg">
+        <tr class="bg-green-500 text-white">
+            <th class="p-2 border">ID</th>
+            <th class="p-2 border">Name</th>
+            <th class="p-2 border">Class</th>
+            <th class="p-2 border">DOB</th>
+            <th class="p-2 border">Gender</th>
+            <th class="p-2 border">City</th>
+            <th class="p-2 border">Marks</th>
+            <th class="p-2 border">Actions</th>
+        </tr>
+        {% for student in students %}
+        <tr class="border text-center" id="row-{{ student.id }}">
+            <td>{{ student.id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.student_class }}</td>
+            <td>{{ student.dob }}</td>
+            <td>{{ student.gender }}</td>
+            <td>{{ student.city }}</td>
+            <td>{{ student.marks }}</td>
+            <td>
+                <button onclick="editStudent('{{ student.id }}', '{{ student.name }}', '{{ student.student_class }}', '{{ student.dob }}', '{{ student.gender }}', '{{ student.city }}','{{ student.marks }}')" class="bg-blue-500 text-white px-2 py-1 rounded">Edit</button>
+                <button onclick="deleteStudent('{{ student.id }}')" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2 class="text-xl font-bold mt-6">Add / Update Student</h2>
+    <form id="studentForm">
+        <input type="hidden" id="student_id" name="student_id">
+        <input type="text" id="name" name="name" placeholder="Name" required><br>
+        <input type="text" id="student_class" name="student_class" placeholder="Class" required><br>
+        <input type="date" id="dob" name="dob" required><br>
+        <input type="text" id="gender" name="gender" placeholder="Gender" required><br>
+        <input type="text" id="city" name="city" placeholder="City" required><br>
+        <input type="number" name="marks" id="marks" placeholder="Marks (0-500)" required><br>
+        <button type="submit" id="submitBtn" class="bg-green-500 text-white px-4 py-2 rounded">Add Student</button>
+        <button type="button" onclick="clearFields()" class="bg-gray-500 text-white px-4 py-2 rounded">Clear</button>
+    </form>
+
+    <script>
+        async function submitForm(event) {
+            event.preventDefault();
+
+            let studentId = document.getElementById("student_id").value;
+            let url = studentId ? `/update/${studentId}` : "/add/";
+            let formData = new FormData(document.getElementById("studentForm"));
+            
+            try {
+                let response = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+
+                let result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    location.reload();// Reload only after success
+                } else {
+                    alert("Error: " + (result.detail || "Something went wrong"));
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+    
+
+        async function deleteStudent(student_id) {
+            if (confirm("Are you sure you want to delete this student?")) {
+                let response = await fetch(`/delete/${student_id}`, { method: "POST" });
+                let result = await response.json();
+                alert(result.message);
+
+                if (response.ok) {
+                    document.getElementById("row-" + student_id).remove();
+                    location.reload(); 
+                }
+            }
+        }
+
+        async function editStudent(id, name, student_class, dob, gender, city, marks) {
+    document.getElementById("student_id").value = id;
+    document.getElementById("name").value = name;
+    document.getElementById("student_class").value = student_class;
+    document.getElementById("dob").value = dob;
+    document.getElementById("gender").value = gender;
+    document.getElementById("city").value = city;
+    document.getElementById("marks").value = marks;
+    document.getElementById("submitBtn").innerText = "Update Student";
+    document.getElementById("studentForm").setAttribute("data-id", id);
+}
+
+
+        function clearFields() {
+            document.getElementById("studentForm").reset();
+            document.getElementById("student_id").value = "";
+            document.getElementById("submitBtn").innerText = "Add Student";
+        }
+
+        document.getElementById("studentForm").addEventListener("submit", submitForm);
+
+        async function loadCharts() {
+    try {
+        let response = await fetch("/students/marks");
+        let students = await response.json();
+
+        let studentNames = students.map(student => student.name);
+        let studentMarks = students.map(student => student.marks);
+
+        // Categorizing marks into groups for Pie Chart
+        let markRanges = [0, 0, 0, 0, 0]; // [0-100, 101-200, 201-300, 301-400, 401-500]
+
+        students.forEach(student => {
+            let marks = student.marks;
+            if (marks <= 100) markRanges[0]++;
+            else if (marks <= 200) markRanges[1]++;
+            else if (marks <= 300) markRanges[2]++;
+            else if (marks <= 400) markRanges[3]++;
+            else markRanges[4]++;
+        });
+
+        // Bar Chart (Marks)
+        let ctxBar = document.getElementById("marksChart").getContext("2d");
+        new Chart(ctxBar, {
+            type: "bar",
+            data: {
+                labels: studentNames,
+                datasets: [{
+                    label: "Marks (Out of 500)",
+                    data: studentMarks,
+                    backgroundColor: "rgba(54, 162, 235, 0.5)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 500 }
+                }
+            }
+        });
+
+        // Line Chart (Marks Trend)
+        let ctxLine = document.getElementById("lineChart").getContext("2d");
+        new Chart(ctxLine, {
+            type: "line",
+            data: {
+                labels: studentNames,
+                datasets: [{
+                    label: "Marks Over Time",
+                    data: studentMarks,
+                    borderColor: "red",
+                    backgroundColor: "rgba(255, 99, 132, 0.2)",
+                    fill: true
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        // Pie Chart (Marks Distribution)
+        let ctxPie = document.getElementById("pieChart").getContext("2d");
+        new Chart(ctxPie, {
+            type: "pie",
+            data: {
+                labels: ["0-100 (Very Low)", "101-200 (Low)", "201-300 (Average)", "301-400 (Good)", "401-500 (Excellent)"],
+                datasets: [{
+                    data: markRanges,
+                    backgroundColor: ["red", "orange", "yellow", "green", "blue"]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+    } catch (error) {
+        console.error("Error loading charts:", error);
+    }
+}
+
+// Load charts on page load
+window.onload = loadCharts;
+
+
+    </script>
+     <!-- Chart Section -->
+     <div class="flex flex-wrap justify-center gap-6 mt-6">
+        <!-- Bar Chart -->
+        <div class="w-1/3 p-4 bg-white shadow-md rounded-lg">
+            <h2 class="text-xl font-bold text-center mb-2">Student Marks Chart</h2>
+            <canvas id="marksChart"></canvas>
+        </div>
+    
+        <!-- Line Chart -->
+        <div class="w-1/3 p-4 bg-white shadow-md rounded-lg">
+            <h2 class="text-xl font-bold text-center mb-2">Marks Trend Over Time</h2>
+            <canvas id="lineChart"></canvas>
+        </div>
+    
+        <!-- Pie Chart -->
+        <div class="w-1/3 p-4 bg-white shadow-md rounded-lg">
+            <h2 class="text-xl font-bold text-center mb-2">Marks Distribution</h2>
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+    
+
+</body>
+</html>
