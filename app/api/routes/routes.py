@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from bson import ObjectId
 from fastapi.templating import Jinja2Templates
-from database.db import collection
+from app.api.core.database.db import collection
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")

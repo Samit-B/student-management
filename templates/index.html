@@ -28,25 +28,33 @@
             <th class="p-2 border">Gender</th>
             <th class="p-2 border">City</th>
             <th class="p-2 border">Marks</th>
+            {% if is_logged_in %}  <!-- Show Actions Column Only If Logged In -->
             <th class="p-2 border">Actions</th>
+            <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded">Logout</a>
+             {% endif %}
         </tr>
         {% for student in students %}
-        <tr class="border text-center" id="row-{{ student.id }}">
-            <td>{{ student.id }}</td>
+        <tr class="border text-center" id="row-{{ student._id }}">
+            <td>{{ student._id }}</td>
             <td>{{ student.name }}</td>
             <td>{{ student.student_class }}</td>
             <td>{{ student.dob }}</td>
             <td>{{ student.gender }}</td>
             <td>{{ student.city }}</td>
             <td>{{ student.marks }}</td>
+            {% if is_logged_in %}
             <td>
-                <button onclick="editStudent('{{ student.id }}', '{{ student.name }}', '{{ student.student_class }}', '{{ student.dob }}', '{{ student.gender }}', '{{ student.city }}','{{ student.marks }}')" class="bg-blue-500 text-white px-2 py-1 rounded">Edit</button>
-                <button onclick="deleteStudent('{{ student.id }}')" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                <button onclick="editStudent('{{ student._id }}', '{{ student.name }}', '{{ student.student_class }}', '{{ student.dob }}', '{{ student.gender }}', '{{ student.city }}','{{ student.marks }}')" class="bg-blue-500 text-white px-2 py-1 rounded">Edit</button>
+                <button onclick="deleteStudent('{{ student._id }}')" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
             </td>
+            
+            {% endif %}
+           
         </tr>
         {% endfor %}
     </table>
 
+    {% if is_logged_in %}
     <h2 class="text-xl font-bold mt-6">Add / Update Student</h2>
     <form id="studentForm">
         <input type="hidden" id="student_id" name="student_id">
@@ -59,8 +67,10 @@
         <button type="submit" id="submitBtn" class="bg-green-500 text-white px-4 py-2 rounded">Add Student</button>
         <button type="button" onclick="clearFields()" class="bg-gray-500 text-white px-4 py-2 rounded">Clear</button>
     </form>
+    {% endif %}
 
     <script>
+    
         async function submitForm(event) {
             event.preventDefault();
 

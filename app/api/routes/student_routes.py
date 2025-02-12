@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from bson import ObjectId
 from fastapi.templating import Jinja2Templates
-from database.db import collection
+from core.database.db import collection
  # Import MongoDB collection
 
 router = APIRouter()
