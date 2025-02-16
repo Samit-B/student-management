@@ -8,3 +8,8 @@ class Student(BaseModel):
     gender: str
     city: str
     marks:int
+# Pydantic Model for Event
+class Event(BaseModel):
+    title: str
+    date: str
+    description: str
